@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 产品经理作品集</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 40px 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { text-align: center; color: white; margin-bottom: 40px; }
+        .header h1 { font-size: 36px; margin-bottom: 12px; }
+        .header p { font-size: 18px; opacity: 0.9; }
+        
+        .projects { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+        .project-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); transition: transform 0.3s, box-shadow 0.3s; }
+        .project-card:hover { transform: translateY(-5px); box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .project-card .icon { font-size: 48px; margin-bottom: 16px; }
+        .project-card h2 { font-size: 20px; color: #333; margin-bottom: 12px; }
+        .project-card p { font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 16px; }
+        .project-card .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .project-card .tag { background: #f0f0f0; padding: 4px 10px; border-radius: 12px; font-size: 12px; color: #666; }
+        .project-card .btn { display: block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 500; transition: opacity 0.3s; }
+        .project-card .btn:hover { opacity: 0.9; }
+        
+        .footer { text-align: center; color: white; margin-top: 40px; opacity: 0.8; font-size: 14px; }
+        .footer a { color: white; text-decoration: underline; }
+        
+        .ai-demo-notice { background: rgba(255,255,255,0.15); border-radius: 12px; padding: 20px; margin-bottom: 30px; color: white; }
+        .ai-demo-notice h3 { margin-bottom: 8px; }
+        .ai-demo-notice code { background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 AI 产品经理作品集</h1>
+            <p>3 个完整 AI 产品项目，展示从设计到落地的全流程能力</p>
+        </div>
+        
+        <div class="ai-demo-notice">
+            <h3>🤖 真实 AI Demo</h3>
+            <p>在服务器运行：<code>cd /home/admin/.openclaw/workspace/作品集/ai-demo && python3 app.py</code></p>
+        </div>
+        
+        <div class="projects">
+            <!-- 项目 1 -->
+            <div class="project-card">
+                <div class="icon">📚</div>
+                <h2>学伴 AI - 学习助手</h2>
+                <p>基于 RAG 技术的 AI 学习助手，提供课程答疑、资料整理、复习规划功能。</p>
+                <div class="tags">
+                    <span class="tag">大模型应用</span>
+                    <span class="tag">RAG</span>
+                    <span class="tag">对话设计</span>
+                </div>
+                <a href="./项目 1-AI 学习助手机器人/原型/index.html" class="btn">👉 打开原型</a>
+            </div>
+            
+            <!-- 项目 2 -->
+            <div class="project-card">
+                <div class="icon">📝</div>
+                <h2>周报助手 - AI 生成工具</h2>
+                <p>AI 驱动的周报生成工具，整合工作数据，5 分钟搞定一周周报。</p>
+                <div class="tags">
+                    <span class="tag">AIGC</span>
+                    <span class="tag">Prompt 工程</span>
+                    <span class="tag">办公场景</span>
+                </div>
+                <a href="./项目 2-AI 周报生成工具/原型/index.html" class="btn">👉 打开原型</a>
+            </div>
+            
+            <!-- 项目 3 -->
+            <div class="project-card">
+                <div class="icon">🍠</div>
+                <h2>小红书搜索 AI 重构</h2>
+                <p>对小红书搜索功能进行 AI 化重构，从关键词匹配升级为语义理解。</p>
+                <div class="tags">
+                    <span class="tag">推荐算法</span>
+                    <span class="tag">搜索优化</span>
+                    <span class="tag">大厂业务</span>
+                </div>
+                <a href="./项目 3-小红书搜索 AI 重构/原型/index.html" class="btn">👉 打开原型</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>📂 <a href="https://github.com/ouyangouyanghuanglin-debug/ai-pm-portfolio" target="_blank">GitHub 仓库</a></p>
+            <p style="margin-top: 12px;">为求职 AI 产品经理岗位准备 © 2026</p>
+        </div>
+    </div>
+</body>
+</html>
