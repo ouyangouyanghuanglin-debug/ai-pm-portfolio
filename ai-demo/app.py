@@ -11,7 +11,7 @@ import urllib.request
 import urllib.parse
 
 # 配置你的 DashScope API Key
-API_KEY = "sk-sp-e8d8befe86194898b5155d354092b80e"  # 从 models.json 获取
+API_KEY = "sk-d997add3f630491ab11b0dd7d151130b"  # DashScope API Key
 API_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
 
 def call_llm(prompt, system_prompt="你是一名 AI 助手"):
