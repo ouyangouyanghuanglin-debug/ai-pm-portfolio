@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>周报助手 - AI 周报生成工具原型</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif; background: #f0f2f5; }
+        
+        /* 顶部导航 */
+        .header { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 24px; font-weight: 600; }
+        .header p { opacity: 0.9; margin-top: 4px; }
+        .header-actions button { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; margin-left: 12px; }
+        
+        /* 主内容区 */
+        .container { max-width: 1200px; margin: 0 auto; padding: 32px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        
+        /* 卡片样式 */
+        .card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .card h2 { font-size: 18px; margin-bottom: 16px; color: #333; display: flex; align-items: center; gap: 8px; }
+        
+        /* 输入区域 */
+        .input-section { margin-bottom: 16px; }
+        .input-section label { display: block; font-size: 14px; color: #666; margin-bottom: 8px; }
+        .input-section textarea { width: 100%; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; font-size: 14px; resize: vertical; min-height: 120px; outline: none; font-family: inherit; }
+        .input-section textarea:focus { border-color: #11998e; }
+        
+        /* 数据源 */
+        .data-sources { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .data-source { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 12px; }
+        .data-source:hover { border-color: #11998e; background: #f0fdf7; }
+        .data-source.connected { border-color: #11998e; background: #f0fdf7; }
+        .data-source .icon { font-size: 24px; }
+        .data-source .info h4 { font-size: 14px; color: #333; }
+        .data-source .info p { font-size: 12px; color: #999; }
+        .data-source .status { margin-left: auto; }
+        .data-source .status.connected { color: #11998e; }
+        
+        /* 模板选择 */
+        .templates { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .template { border: 2px solid #e0e0e0; border-radius: 8px; padding: 16px; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .template:hover { border-color: #11998e; }
+        .template.selected { border-color: #11998e; background: #f0fdf7; }
+        .template .icon { font-size: 32px; margin-bottom: 8px; }
+        .template h4 { font-size: 14px; color: #333; }
+        .template p { font-size: 12px; color: #999; margin-top: 4px; }
+        
+        /* 按钮 */
+        .btn-primary { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; border: none; padding: 14px 32px; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%; font-weight: 500; }
+        .btn-primary:hover { opacity: 0.95; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        /* 生成结果 */
+        .result-section { display: none; }
+        .result-section.show { display: block; }
+        
+        .report-output { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+        .report-output h3 { font-size: 16px; color: #333; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e0e0e0; }
+        .report-output .section { margin-bottom: 20px; }
+        .report-output .section h4 { font-size: 14px; color: #11998e; margin-bottom: 8px; }
+        .report-output .section ul { margin-left: 20px; font-size: 14px; color: #666; line-height: 1.8; }
+        .report-output .section p { font-size: 14px; color: #666; line-height: 1.8; }
+        
+        /* 操作按钮 */
+        .action-buttons { display: flex; gap: 12px; }
+        .btn-secondary { background: white; border: 1px solid #e0e0e0; color: #666; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        .btn-secondary:hover { border-color: #11998e; color: #11998e; }
+        
+        /* 加载动画 */
+        .loading { display: none; text-align: center; padding: 40px; }
+        .loading.show { display: block; }
+        .loading .spinner { width: 40px; height: 40px; border: 4px solid #f0f0f0; border-top-color: #11998e; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #666; font-size: 14px; }
+        
+        /* 提示框 */
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; display: none; z-index: 1000; }
+        .toast.show { display: block; }
+        
+        /* 统计信息 */
+        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: white; border-radius: 8px; padding: 16px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .stat-card .number { font-size: 28px; font-weight: 600; color: #11998e; }
+        .stat-card .label { font-size: 13px; color: #999; margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <!-- 顶部 -->
+    <div class="header">
+        <div>
+            <h1>📝 周报助手</h1>
+            <p>AI 驱动，5 分钟搞定一周周报</p>
+        </div>
+        <div class="header-actions">
+            <button onclick="showHistory()">历史记录</button>
+            <button onclick="showTemplates()">模板中心</button>
+        </div>
+    </div>
+
+    <!-- 统计信息 -->
+    <div class="container" style="padding-top: 0; padding-bottom: 24px;">
+        <div class="stats" style="grid-column: 1 / -1;">
+            <div class="stat-card">
+                <div class="number">12</div>
+                <div class="label">已生成周报</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">8.5h</div>
+                <div class="label">累计节省时间</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">专业版</div>
+                <div class="label">当前版本</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="container">
+        <!-- 左侧：输入区 -->
+        <div class="card">
+            <h2>📝 本周工作内容</h2>
+            
+            <!-- 数据源 -->
+            <div class="input-section">
+                <label>关联数据源（可选）</label>
+                <div class="data-sources">
+                    <div class="data-source" onclick="toggleSource(this)">
+                        <span class="icon">🐙</span>
+                        <div class="info">
+                            <h4>GitHub</h4>
+                            <p>自动获取提交记录</p>
+                        </div>
+                        <span class="status">未连接</span>
+                    </div>
+                    <div class="data-source" onclick="toggleSource(this)">
+                        <span class="icon">📋</span>
+                        <div class="info">
+                            <h4>Jira</h4>
+                            <p>自动获取任务完成</p>
+                        </div>
+                        <span class="status">未连接</span>
+                    </div>
+                    <div class="data-source" onclick="toggleSource(this)">
+                        <span class="icon">📱</span>
+                        <div class="info">
+                            <h4>飞书</h4>
+                            <p>自动获取会议记录</p>
+                        </div>
+                        <span class="status">已连接</span>
+                    </div>
+                    <div class="data-source" onclick="toggleSource(this)">
+                        <span class="icon">💬</span>
+                        <div class="info">
+                            <h4>钉钉</h4>
+                            <p>自动获取任务</p>
+                        </div>
+                        <span class="status">未连接</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 手动输入 -->
+            <div class="input-section">
+                <label>补充工作内容（手动输入）</label>
+                <textarea id="workInput" placeholder="请输入本周完成的工作，例如：
+1. 完成了用户登录模块开发
+2. 修复了 3 个线上 bug
+3. 参与了产品需求评审会
+4. 编写了技术文档..."></textarea>
+            </div>
+            
+            <!-- 岗位选择 -->
+            <div class="input-section">
+                <label>选择岗位模板</label>
+                <div class="templates">
+                    <div class="template selected" onclick="selectTemplate(this)">
+                        <div class="icon">💻</div>
+                        <h4>技术岗</h4>
+                        <p>突出代码/技术难点</p>
+                    </div>
+                    <div class="template" onclick="selectTemplate(this)">
+                        <div class="icon">📊</div>
+                        <h4>产品岗</h4>
+                        <p>突出需求/数据</p>
+                    </div>
+                    <div class="template" onclick="selectTemplate(this)">
+                        <div class="icon">📈</div>
+                        <h4>运营岗</h4>
+                        <p>突出活动/转化</p>
+                    </div>
+                    <div class="template" onclick="selectTemplate(this)">
+                        <div class="icon">💼</div>
+                        <h4>销售岗</h4>
+                        <p>突出业绩/客户</p>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn-primary" onclick="generateReport()">✨ AI 生成周报</button>
+            
+            <!-- 加载动画 -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>AI 正在分析你的工作内容...</p>
+                <p style="font-size: 12px; color: #999; margin-top: 8px;">通常只需 5-10 秒</p>
+            </div>
+        </div>
+
+        <!-- 右侧：结果区 -->
+        <div class="card result-section" id="resultSection">
+            <h2>📄 生成的周报</h2>
+            
+            <div class="report-output" id="reportOutput">
+                <!-- 动态生成内容 -->
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn-secondary" onclick="regenerate()">🔄 重新生成</button>
+                <button class="btn-secondary" onclick="copyReport()">📋 复制</button>
+                <button class="btn-secondary" onclick="sendReport()">📧 发送</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示框 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 切换数据源
+        function toggleSource(element) {
+            const status = element.querySelector('.status');
+            if (element.classList.contains('connected')) {
+                element.classList.remove('connected');
+                status.textContent = '未连接';
+                status.classList.remove('connected');
+            } else {
+                element.classList.add('connected');
+                status.textContent = '已连接';
+                status.classList.add('connected');
+                showToast('已连接 ' + element.querySelector('h4').textContent);
+            }
+        }
+        
+        // 选择模板
+        function selectTemplate(element) {
+            document.querySelectorAll('.template').forEach(t => t.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+        
+        // 生成周报
+        function generateReport() {
+            const input = document.getElementById('workInput').value;
+            if (!input.trim()) {
+                showToast('请输入工作内容');
+                return;
+            }
+            
+            // 显示加载
+            document.getElementById('loading').classList.add('show');
+            document.querySelector('.btn-primary').disabled = true;
+            
+            // 模拟 AI 生成
+            setTimeout(() => {
+                document.getElementById('loading').classList.remove('show');
+                document.querySelector('.btn-primary').disabled = false;
+                showResult();
+            }, 2000);
+        }
+        
+        // 显示结果
+        function showResult() {
+            const output = document.getElementById('reportOutput');
+            output.innerHTML = `
+                <div class="section">
+                    <h4>## 本周工作总结</h4>
+                    <ul>
+                        <li>完成用户登录模块开发，包括密码加密、短信验证等功能，代码覆盖率 95%</li>
+                        <li>修复 3 个线上 bug，包括支付超时、页面加载慢等问题，用户反馈减少 40%</li>
+                        <li>参与产品需求评审会，输出技术方案文档 2 份</li>
+                        <li>完成代码审查 5 次，帮助团队成员解决技术问题</li>
+                    </ul>
+                </div>
+                <div class="section">
+                    <h4>## 遇到的问题与解决方案</h4>
+                    <ul>
+                        <li><strong>问题：</strong>短信验证码发送延迟
+                        <br><strong>解决：</strong>优化了短信服务商配置，增加备用通道，延迟从 5s 降至 1s</li>
+                        <li><strong>问题：</strong>登录页面加载慢
+                        <br><strong>解决：</strong>引入懒加载和 CDN 加速，首屏时间从 3s 降至 1.2s</li>
+                    </ul>
+                </div>
+                <div class="section">
+                    <h4>## 下周工作计划</h4>
+                    <ul>
+                        <li>完成用户个人中心模块开发（预计周三完成）</li>
+                        <li>参与新版本需求评审，输出技术方案</li>
+                        <li>优化现有代码性能，目标提升 20%</li>
+                        <li>组织技术分享会，主题：前端性能优化</li>
+                    </ul>
+                </div>
+            `;
+            document.getElementById('resultSection').classList.add('show');
+            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 重新生成
+        function regenerate() {
+            document.getElementById('reportOutput').innerHTML = '';
+            generateReport();
+        }
+        
+        // 复制
+        function copyReport() {
+            showToast('已复制到剪贴板');
+        }
+        
+        // 发送
+        function sendReport() {
+            showToast('已发送到邮箱（原型演示）');
+        }
+        
+        // 历史记录
+        function showHistory() {
+            showToast('历史记录功能（原型演示）');
+        }
+        
+        // 模板中心
+        function showTemplates() {
+            showToast('模板中心功能（原型演示）');
+        }
+        
+        // 提示框
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+    </script>
+</body>
+</html>

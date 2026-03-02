@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小红书搜索 AI 重构原型</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif; background: #f5f5f5; }
+        
+        /* 顶部 */
+        .header { background: #ff2442; color: white; padding: 16px 20px; position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
+        .header h1 { font-size: 18px; font-weight: 600; text-align: center; }
+        
+        /* 搜索框 */
+        .search-bar { padding: 70px 16px 16px; background: white; border-bottom: 1px solid #e0e0e0; }
+        .search-input-wrapper { display: flex; gap: 12px; }
+        .search-input { flex: 1; background: #f5f5f5; border: none; border-radius: 20px; padding: 12px 20px; font-size: 15px; outline: none; }
+        .search-input:focus { background: #f0f0f0; }
+        .search-btn { background: #ff2442; color: white; border: none; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; font-size: 18px; }
+        
+        /* 主内容 */
+        .main { padding: 16px; max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
+        
+        /* AI 答案卡片 */
+        .ai-answer { background: linear-gradient(135deg, #fff5f7 0%, #fff 100%); border: 1px solid #ffd6e0; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .ai-answer-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .ai-answer-header .icon { font-size: 20px; }
+        .ai-answer-header span { font-size: 14px; font-weight: 600; color: #ff2442; }
+        .ai-answer-header .tag { background: #ff2442; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: auto; }
+        .ai-answer-content { font-size: 14px; color: #333; line-height: 1.8; }
+        .ai-answer-content h4 { font-size: 15px; color: #333; margin: 12px 0 8px; }
+        .ai-answer-content ul { margin-left: 20px; color: #666; }
+        .ai-answer-content li { margin-bottom: 6px; }
+        .ai-answer-sources { margin-top: 16px; padding-top: 12px; border-top: 1px solid #ffeef0; }
+        .ai-answer-sources p { font-size: 12px; color: #999; margin-bottom: 8px; }
+        .source-links { display: flex; flex-wrap: wrap; gap: 8px; }
+        .source-link { background: white; border: 1px solid #ffd6e0; padding: 6px 12px; border-radius: 16px; font-size: 12px; color: #ff2442; cursor: pointer; }
+        
+        /* 追问区域 */
+        .follow-up { background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+        .follow-up h4 { font-size: 14px; color: #666; margin-bottom: 12px; }
+        .follow-up-questions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .follow-up-question { background: #f5f5f5; padding: 8px 14px; border-radius: 20px; font-size: 13px; color: #666; cursor: pointer; }
+        .follow-up-question:hover { background: #ff2442; color: white; }
+        
+        /* 笔记列表 */
+        .notes-section h3 { font-size: 16px; color: #333; margin-bottom: 12px; }
+        .note-card { background: white; border-radius: 12px; overflow: hidden; margin-bottom: 12px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .note-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .note-image { height: 160px; background: linear-gradient(135deg, #ffeef0 0%, #ffd6e0 100%); display: flex; align-items: center; justify-content: center; font-size: 48px; }
+        .note-content { padding: 12px; }
+        .note-title { font-size: 14px; color: #333; margin-bottom: 8px; line-height: 1.4; }
+        .note-meta { display: flex; justify-content: space-between; font-size: 12px; color: #999; }
+        .note-meta .user { display: flex; align-items: center; gap: 6px; }
+        .note-meta .avatar { width: 20px; height: 20px; border-radius: 50%; background: #ddd; }
+        .note-ad { background: #fff9e6; border: 1px solid #ffe082; }
+        .note-ad-tag { display: inline-block; background: #ffe082; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #666; margin-bottom: 6px; }
+        
+        /* 对比切换 */
+        .mode-switch { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; border-radius: 30px; padding: 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); display: flex; gap: 6px; z-index: 100; }
+        .mode-btn { padding: 10px 20px; border-radius: 24px; border: none; cursor: pointer; font-size: 14px; }
+        .mode-btn.active { background: #ff2442; color: white; }
+        .mode-btn:not(.active) { background: #f5f5f5; color: #666; }
+        
+        /* 传统搜索结果 */
+        .traditional-results { display: none; }
+        .traditional-results.show { display: block; }
+        .ai-results { display: block; }
+        .ai-results.hide { display: none; }
+        
+        /* 对比说明 */
+        .comparison-note { background: #fff9e6; border: 1px solid #ffe082; border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #666; }
+        .comparison-note strong { color: #ff2442; }
+    </style>
+</head>
+<body>
+    <!-- 顶部 -->
+    <div class="header">
+        <h1>🍠 小红书搜索 AI 重构</h1>
+    </div>
+
+    <!-- 搜索框 -->
+    <div class="search-bar">
+        <div class="search-input-wrapper">
+            <input type="text" class="search-input" id="searchInput" value="敏感肌水乳推荐" onkeypress="if(event.keyCode===13) doSearch()">
+            <button class="search-btn" onclick="doSearch()">🔍</button>
+        </div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main">
+        <!-- 对比说明 -->
+        <div class="comparison-note">
+            <strong>📊 原型说明：</strong>点击下方切换按钮，对比传统搜索与 AI 重构后的体验差异
+        </div>
+
+        <!-- AI 重构结果 -->
+        <div class="ai-results" id="aiResults">
+            <!-- AI 答案 -->
+            <div class="ai-answer">
+                <div class="ai-answer-header">
+                    <span class="icon">✨</span>
+                    <span>AI 智能答案</span>
+                    <span class="tag">基于 128 篇笔记</span>
+                </div>
+                <div class="ai-answer-content">
+                    <h4>敏感肌水乳 Top5 推荐</h4>
+                    <ul>
+                        <li><strong>理肤泉 B5 水乳</strong> - 适合极度敏感、泛红肌肤，修复能力强</li>
+                        <li><strong>薇诺娜舒敏水乳</strong> - 国货之光，性价比高，日常保湿</li>
+                        <li><strong>雅漾舒缓水乳</strong> - 温泉水配方，温和不刺激</li>
+                        <li><strong>珂润浸润水乳</strong> - 神经酰胺修复，干敏肌首选</li>
+                        <li><strong>芙丽芳丝水乳</strong> - 无添加配方，孕妇可用</li>
+                    </ul>
+                    
+                    <h4>⚠️ 选购建议</h4>
+                    <ul>
+                        <li><strong>避开成分：</strong>酒精、香精、防腐剂（MIT/CMIT）</li>
+                        <li><strong>优先成分：</strong>神经酰胺、角鲨烷、B5、积雪草</li>
+                        <li><strong>先试用：</strong>耳后/手腕内侧测试 24 小时无过敏再上脸</li>
+                    </ul>
+                </div>
+                <div class="ai-answer-sources">
+                    <p>📚 信息来源</p>
+                    <div class="source-links">
+                        <span class="source-link" onclick="alert('跳转到原笔记')">皮肤科医生的建议</span>
+                        <span class="source-link" onclick="alert('跳转到原笔记')">敏感肌 5 年血泪史</span>
+                        <span class="source-link" onclick="alert('跳转到原笔记')">水乳成分深扒</span>
+                        <span class="source-link" onclick="alert('跳转到原笔记')">+125 篇笔记</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 追问区域 -->
+            <div class="follow-up">
+                <h4>💬 继续追问</h4>
+                <div class="follow-up-questions">
+                    <span class="follow-up-question" onclick="askFollowUp('油皮敏感肌用什么？')">油皮敏感肌用什么？</span>
+                    <span class="follow-up-question" onclick="askFollowUp('预算 200 以内有推荐吗？')">预算 200 以内</span>
+                    <span class="follow-up-question" onclick="askFollowUp('这些在哪里买靠谱？')">哪里买靠谱？</span>
+                    <span class="follow-up-question" onclick="askFollowUp('和正常肌肤有什么区别？')">和正常肌肤有什么区别？</span>
+                </div>
+            </div>
+
+            <!-- 笔记列表 -->
+            <div class="notes-section">
+                <h3>相关笔记</h3>
+                
+                <div class="note-card" onclick="alert('打开笔记详情')">
+                    <div class="note-image">💧</div>
+                    <div class="note-content">
+                        <div class="note-title">敏感肌 5 年！这些水乳真的救了我的脸😭</div>
+                        <div class="note-meta">
+                            <div class="user">
+                                <div class="avatar"></div>
+                                <span>护肤达人小 A</span>
+                            </div>
+                            <span>❤️ 2.3w</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="note-card note-ad" onclick="alert('这是广告标识示例')">
+                    <div class="note-content">
+                        <span class="note-ad-tag">广告</span>
+                        <div class="note-title">【官方】理肤泉 B5 修复水乳 敏感肌专用 现在购买立减 50 元</div>
+                        <div class="note-meta">
+                            <div class="user">
+                                <div class="avatar"></div>
+                                <span>理肤泉官方旗舰店</span>
+                            </div>
+                            <span>🛒 1.2w 人购买</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="note-card" onclick="alert('打开笔记详情')">
+                    <div class="note-image">🔬</div>
+                    <div class="note-content">
+                        <div class="note-title">成分党深扒！敏感肌水乳里的智商税你交了多少？</div>
+                        <div class="note-meta">
+                            <div class="user">
+                                <div class="avatar"></div>
+                                <span>成分测评师</span>
+                            </div>
+                            <span>❤️ 1.8w</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="note-card" onclick="alert('打开笔记详情')">
+                    <div class="note-image">📝</div>
+                    <div class="note-content">
+                        <div class="note-title">皮肤科医生告诉你：敏感肌选水乳看这 5 点就够了</div>
+                        <div class="note-meta">
+                            <div class="user">
+                                <div class="avatar"></div>
+                                <span>王医生聊护肤</span>
+                            </div>
+                            <span>❤️ 3.1w</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 传统搜索结果 -->
+        <div class="traditional-results" id="traditionalResults">
+            <div class="comparison-note">
+                <strong>📋 传统搜索特点：</strong>仅关键词匹配，无 AI 答案摘要，用户需逐个点击笔记查看
+            </div>
+            
+            <div class="notes-section">
+                <h3>搜索结果（关键词：敏感肌 水乳 推荐）</h3>
+                
+                <div class="note-card note-ad">
+                    <div class="note-content">
+                        <span class="note-ad-tag">广告</span>
+                        <div class="note-title">敏感肌专用水乳套装 买一送一 限时优惠</div>
+                        <div class="note-meta">
+                            <div class="user">
+                                <div class="avatar"></div>
+                                <span>某品牌旗舰店</span>
+                            </div>
+                            <span>🛒 5000+ 购买</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="note-card">
+                    <div class="note-image">💧</div>
+                    <div class="note-content">
+                        <div class="note-title">敏感肌水乳推荐</div>
+                        <div class="note-meta">
+                            <div class="user">
+                                <div class="avatar"></div>
+                                <span>用户 1</span>
+                            </div>
+                            <span>❤️ 100</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="note-card">
+                    <div class="note-image">🌸</div>
+                    <div class="note-content">
+                        <div class="note-title">我的敏感肌水乳</div>
+                        <div class="note-meta">
+                            <div class="user">
+                                <div class="avatar"></div>
+                                <span>用户 2</span>
+                            </div>
+                            <span>❤️ 50</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="note-card">
+                    <div class="note-image">✨</div>
+                    <div class="note-content">
+                        <div class="note-title">水乳推荐敏感肌</div>
+                        <div class="note-meta">
+                            <div class="user">
+                                <div class="avatar"></div>
+                                <span>用户 3</span>
+                            </div>
+                            <span>❤️ 200</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模式切换 -->
+    <div class="mode-switch">
+        <button class="mode-btn active" onclick="switchMode('ai')">✨ AI 重构</button>
+        <button class="mode-btn" onclick="switchMode('traditional')">📋 传统搜索</button>
+    </div>
+
+    <script>
+        // 切换模式
+        function switchMode(mode) {
+            const aiResults = document.getElementById('aiResults');
+            const traditionalResults = document.getElementById('traditionalResults');
+            const btns = document.querySelectorAll('.mode-btn');
+            
+            if (mode === 'ai') {
+                aiResults.classList.remove('hide');
+                traditionalResults.classList.remove('show');
+                btns[0].classList.add('active');
+                btns[1].classList.remove('active');
+            } else {
+                aiResults.classList.add('hide');
+                traditionalResults.classList.add('show');
+                btns[0].classList.remove('active');
+                btns[1].classList.add('active');
+            }
+        }
+        
+        // 搜索
+        function doSearch() {
+            const query = document.getElementById('searchInput').value;
+            alert('搜索：' + query + '\n\n（原型演示：实际会调用 AI 生成答案）');
+        }
+        
+        // 追问
+        function askFollowUp(question) {
+            alert('追问：' + question + '\n\n（原型演示：AI 会基于上下文继续回答）');
+        }
+    </script>
+</body>
+</html>

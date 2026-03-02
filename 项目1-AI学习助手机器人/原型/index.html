@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学伴 AI - 学习助手原型</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif; background: #f5f5f5; }
+        
+        /* 顶部导航 */
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
+        .header h1 { font-size: 18px; font-weight: 600; }
+        .header-actions { display: flex; gap: 12px; }
+        .header-actions button { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        
+        /* 底部导航 */
+        .tabbar { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e0e0e0; display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; }
+        .tab-item { display: flex; flex-direction: column; align-items: center; color: #999; font-size: 11px; cursor: pointer; padding: 4px 12px; }
+        .tab-item.active { color: #667eea; }
+        .tab-item .icon { font-size: 22px; margin-bottom: 2px; }
+        
+        /* 主内容区 */
+        .main { padding: 60px 16px 70px; max-width: 480px; margin: 0 auto; }
+        
+        /* 对话界面 */
+        .chat-container { display: flex; flex-direction: column; gap: 16px; }
+        .message { display: flex; gap: 12px; max-width: 85%; }
+        .message.user { margin-left: auto; flex-direction: row-reverse; }
+        .message-avatar { width: 36px; height: 36px; border-radius: 50%; background: #667eea; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; flex-shrink: 0; }
+        .message.user .avatar { background: #4caf50; }
+        .message-content { background: white; padding: 12px 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .message.user .message-content { background: #667eea; color: white; }
+        .message-content h4 { font-size: 13px; margin-bottom: 8px; color: #667eea; }
+        .message.user .message-content h4 { color: rgba(255,255,255,0.9); }
+        .message-content p { font-size: 14px; line-height: 1.6; }
+        .message-content ul { margin-left: 16px; font-size: 14px; line-height: 1.8; }
+        
+        /* 输入区 */
+        .input-area { position: fixed; bottom: 50px; left: 0; right: 0; background: white; padding: 12px 16px; border-top: 1px solid #e0e0e0; display: flex; gap: 12px; align-items: center; }
+        .input-area input { flex: 1; border: 1px solid #e0e0e0; border-radius: 20px; padding: 10px 16px; font-size: 14px; outline: none; }
+        .input-area input:focus { border-color: #667eea; }
+        .input-area button { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-size: 14px; }
+        
+        /* 快捷问题 */
+        .quick-questions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .quick-question { background: #f0f0f0; padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; color: #666; }
+        .quick-question:hover { background: #667eea; color: white; }
+        
+        /* 知识库卡片 */
+        .knowledge-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; }
+        .knowledge-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .knowledge-card h3 { font-size: 15px; margin-bottom: 8px; color: #333; }
+        .knowledge-card p { font-size: 13px; color: #666; line-height: 1.5; }
+        .knowledge-card .meta { display: flex; justify-content: space-between; margin-top: 12px; font-size: 12px; color: #999; }
+        
+        /* 上传区域 */
+        .upload-area { border: 2px dashed #667eea; border-radius: 12px; padding: 32px; text-align: center; cursor: pointer; background: #f8f9ff; }
+        .upload-area:hover { background: #f0f2ff; }
+        .upload-area .icon { font-size: 48px; margin-bottom: 12px; }
+        .upload-area p { color: #666; font-size: 14px; }
+        
+        /* 页面切换 */
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        /* 学习计划 */
+        .plan-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .plan-card h3 { font-size: 15px; margin-bottom: 12px; color: #333; display: flex; justify-content: space-between; }
+        .plan-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .plan-item:last-child { border-bottom: none; }
+        .plan-item .checkbox { width: 20px; height: 20px; border: 2px solid #667eea; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .plan-item .checkbox.checked { background: #667eea; }
+        .plan-item .checkbox.checked::after { content: '✓'; color: white; font-size: 14px; }
+        .plan-item .content { flex: 1; }
+        .plan-item .content h4 { font-size: 14px; color: #333; margin-bottom: 4px; }
+        .plan-item .content p { font-size: 12px; color: #999; }
+        
+        /* 按钮 */
+        .btn-primary { background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; width: 100%; margin-top: 16px; }
+        .btn-primary:hover { background: #5a6fd6; }
+        
+        /* 标签 */
+        .tag { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; margin-right: 6px; }
+        .tag-blue { background: #e8f0fe; color: #1967d2; }
+        .tag-green { background: #e6f4ea; color: #137333; }
+        .tag-orange { background: #fef7e0; color: #b06000; }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <div class="header">
+        <h1>📚 学伴 AI</h1>
+        <div class="header-actions">
+            <button onclick="showPage('chat')">对话</button>
+            <button onclick="showPage('knowledge')">知识库</button>
+        </div>
+    </div>
+
+    <!-- 聊天页面 -->
+    <div id="page-chat" class="page active">
+        <div class="main">
+            <div class="chat-container" id="chatContainer">
+                <!-- AI 欢迎消息 -->
+                <div class="message">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        <h4>学伴 AI</h4>
+                        <p>你好！我是你的 AI 学习助手，可以帮你：</p>
+                        <ul>
+                            <li>解答课程问题</li>
+                            <li>整理学习资料</li>
+                            <li>生成复习计划</li>
+                        </ul>
+                        <div class="quick-questions">
+                            <span class="quick-question" onclick="askQuestion('高数极限怎么求？')">高数极限怎么求？</span>
+                            <span class="quick-question" onclick="askQuestion('帮我制定一周复习计划')">制定复习计划</span>
+                            <span class="quick-question" onclick="askQuestion('线性代数的特征值是什么？')">特征值是什么？</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="questionInput" placeholder="输入你的问题..." onkeypress="if(event.keyCode===13) sendMessage()">
+            <button onclick="sendMessage()">发送</button>
+        </div>
+    </div>
+
+    <!-- 知识库页面 -->
+    <div id="page-knowledge" class="page">
+        <div class="main">
+            <h2 style="margin-bottom: 16px; font-size: 18px;">我的知识库</h2>
+            
+            <!-- 上传区域 -->
+            <div class="upload-area" onclick="alert('原型演示：点击后会打开文件选择器，支持 PPT/PDF/Word 格式')">
+                <div class="icon">📁</div>
+                <p>点击上传学习资料</p>
+                <p style="font-size: 12px; color: #999; margin-top: 8px;">支持 PPT、PDF、Word、图片</p>
+            </div>
+            
+            <h3 style="margin: 24px 0 12px; font-size: 16px;">已上传资料</h3>
+            
+            <!-- 知识卡片 -->
+            <div class="knowledge-card" onclick="alert('原型演示：点击可查看资料详情，AI 会基于此资料回答问题')">
+                <h3>📊 高等数学上册</h3>
+                <p>同济大学第七版 • 共 328 页 • 已学习完成</p>
+                <div class="meta">
+                    <span>上传于 2026-02-28</span>
+                    <span class="tag tag-green">已处理</span>
+                </div>
+            </div>
+            
+            <div class="knowledge-card" onclick="alert('原型演示：点击可查看资料详情，AI 会基于此资料回答问题')">
+                <h3>📈 线性代数笔记</h3>
+                <p>个人笔记 • 共 45 页 • 已学习完成</p>
+                <div class="meta">
+                    <span>上传于 2026-03-01</span>
+                    <span class="tag tag-green">已处理</span>
+                </div>
+            </div>
+            
+            <div class="knowledge-card" onclick="alert('原型演示：点击可查看资料详情，AI 会基于此资料回答问题')">
+                <h3>📉 概率论与数理统计</h3>
+                <p>浙大第四版 • 共 256 页 • 处理中...</p>
+                <div class="meta">
+                    <span>上传于 2026-03-02</span>
+                    <span class="tag tag-orange">处理中</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 计划页面 -->
+    <div id="page-plan" class="page">
+        <div class="main">
+            <h2 style="margin-bottom: 16px; font-size: 18px;">复习计划</h2>
+            
+            <div class="plan-card">
+                <h3>
+                    <span>📚 高等数学期末复习</span>
+                    <span class="tag tag-blue">7 天</span>
+                </h3>
+                <div class="plan-item">
+                    <div class="checkbox checked" onclick="toggleCheck(this)"></div>
+                    <div class="content">
+                        <h4>第一章：函数与极限</h4>
+                        <p>复习笔记 + 完成课后习题</p>
+                    </div>
+                </div>
+                <div class="plan-item">
+                    <div class="checkbox checked" onclick="toggleCheck(this)"></div>
+                    <div class="content">
+                        <h4>第二章：导数与微分</h4>
+                        <p>复习笔记 + 完成课后习题</p>
+                    </div>
+                </div>
+                <div class="plan-item">
+                    <div class="checkbox" onclick="toggleCheck(this)"></div>
+                    <div class="content">
+                        <h4>第三章：微分中值定理</h4>
+                        <p>复习笔记 + 完成课后习题</p>
+                    </div>
+                </div>
+                <div class="plan-item">
+                    <div class="checkbox" onclick="toggleCheck(this)"></div>
+                    <div class="content">
+                        <h4>第四章：不定积分</h4>
+                        <p>复习笔记 + 完成课后习题</p>
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="alert('原型演示：点击会生成新的复习计划')">+ 生成新计划</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <div class="tabbar">
+        <div class="tab-item active" onclick="showPage('chat'); updateTab(this)" data-page="chat">
+            <span class="icon">💬</span>
+            <span>对话</span>
+        </div>
+        <div class="tab-item" onclick="showPage('knowledge'); updateTab(this)" data-page="knowledge">
+            <span class="icon">📚</span>
+            <span>知识库</span>
+        </div>
+        <div class="tab-item" onclick="showPage('plan'); updateTab(this)" data-page="plan">
+            <span class="icon">📅</span>
+            <span>计划</span>
+        </div>
+    </div>
+
+    <script>
+        // 页面切换
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+        }
+        
+        // 更新 Tab 状态
+        function updateTab(element) {
+            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+            element.classList.add('active');
+        }
+        
+        // 发送消息
+        function sendMessage() {
+            const input = document.getElementById('questionInput');
+            const question = input.value.trim();
+            if (!question) return;
+            
+            // 添加用户消息
+            addMessage(question, 'user');
+            input.value = '';
+            
+            // 模拟 AI 回复
+            setTimeout(() => {
+                const answer = getAIAnswer(question);
+                addMessage(answer, 'ai');
+            }, 1000);
+        }
+        
+        // 添加消息到聊天
+        function addMessage(content, type) {
+            const container = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message' + (type === 'user' ? ' user' : '');
+            messageDiv.innerHTML = `
+                <div class="message-avatar${type === 'user' ? ' avatar' : ''}">${type === 'user' ? '👤' : '🤖'}</div>
+                <div class="message-content">
+                    <h4>${type === 'user' ? '你' : '学伴 AI'}</h4>
+                    <p>${content}</p>
+                </div>
+            `;
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // 快捷提问
+        function askQuestion(question) {
+            document.getElementById('questionInput').value = question;
+            sendMessage();
+        }
+        
+        // 模拟 AI 回答
+        function getAIAnswer(question) {
+            const answers = {
+                '高数极限怎么求？': '求极限的常用方法：\n\n1. **直接代入法**：如果函数连续，直接代入\n2. **因式分解**：消去零因子后求极限\n3. **洛必达法则**：0/0 或∞/0型可使用\n4. **等价无穷小**：记住常用等价替换\n\n需要我详细讲解哪个方法？',
+                '帮我制定一周复习计划': '好的！请告诉我：\n\n1. 要复习的科目？\n2. 考试日期？\n3. 每天可用学习时间？\n\n我会为你生成个性化复习计划 📅',
+                '线性代数的特征值是什么？': '**特征值**是线性代数中的核心概念：\n\n**定义**：对于 n 阶矩阵 A，如果存在数λ和非零向量 x，使得 Ax = λx，则λ称为 A 的特征值。\n\n**求法**：\n1. 解特征方程 |A-λE| = 0\n2. 求得λ即为特征值\n\n需要我举例说明吗？',
+                'default': '这是一个很好的问题！让我帮你分析一下...\n\n（这是原型演示，实际会调用大模型生成详细回答）\n\n你可以继续追问，我会基于你的学习资料给出更精准的答案。'
+            };
+            
+            for (const [key, value] of Object.entries(answers)) {
+                if (question.includes(key) || key.includes(question)) {
+                    return value;
+                }
+            }
+            return answers['default'];
+        }
+        
+        // 切换复选框
+        function toggleCheck(element) {
+            element.classList.toggle('checked');
+        }
+    </script>
+</body>
+</html>
